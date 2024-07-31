@@ -45,3 +45,4 @@
 ffbuild
 build
 .cache
+.vscode

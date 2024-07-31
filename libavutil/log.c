@@ -526,8 +526,12 @@ void av_log_set_callback_report(int *_p_report_file_level, FILE *_report_file) {
 static volatile int received_nb_signals = 0;
 static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
 
-int avutil_decode_interrupt_cb(void *ctx) {
+static int _avutil_decode_interrupt_cb(void *ctx) {
     return received_nb_signals > atomic_load(&transcode_init_done);
+}
+
+void *avutil_decode_interrupt_cb(void) {
+    return _avutil_decode_interrupt_cb;
 }
 
 void avutil_transcode_init_done(int *val, int get) {

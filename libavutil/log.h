@@ -396,7 +396,7 @@ void av_log_set_callback_help(void);
 
 void av_log_set_callback_report(int *_p_report_file_level, FILE *_report_file);
 
-int avutil_decode_interrupt_cb(void *ctx);
+void *avutil_decode_interrupt_cb(void);
 
 void avutil_transcode_init_done(int *val, int get);
 

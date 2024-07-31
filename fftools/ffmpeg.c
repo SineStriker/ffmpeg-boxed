@@ -507,7 +507,7 @@ AVIOInterruptCB int_cb = { NULL, NULL };
 
 static void  __attribute__((constructor)) init_values(void) {
     p_received_nb_signals = avutil_received_nb_signals_ptr();
-    int_cb.callback = avutil_decode_interrupt_cb;
+    int_cb.callback = (int (*)(void*)) avutil_decode_interrupt_cb();
 }
 
 static void ffmpeg_cleanup(int ret)
