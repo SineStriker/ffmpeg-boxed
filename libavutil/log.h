@@ -21,6 +21,7 @@
 #ifndef AVUTIL_LOG_H
 #define AVUTIL_LOG_H
 
+#include <stdio.h>
 #include <stdarg.h>
 #include "attributes.h"
 #include "version.h"
@@ -235,7 +236,14 @@ typedef struct AVClass {
  * @param fmt The format string (printf-compatible) that specifies how
  *        subsequent arguments are converted to output.
  */
-void av_log(void *avcl, int level, const char *fmt, ...) av_printf_format(3, 4);
+void av_vlog(void *avcl, int level, const char *fmt, va_list vl);
+static inline void av_log(void *avcl, int level, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    av_vlog(avcl, level, fmt, vl);
+    va_end(vl);
+}
 
 /**
  * Send the specified message to the log once with the initial_level and then with
@@ -274,7 +282,7 @@ void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state
  *        subsequent arguments are converted to output.
  * @param vl The arguments referenced by the format string.
  */
-void av_vlog(void *avcl, int level, const char *fmt, va_list vl);
+// void av_vlog(void *avcl, int level, const char *fmt, va_list vl);
 
 /**
  * Get the current log level
@@ -383,5 +391,15 @@ int av_log_get_flags(void);
 /**
  * @}
  */
+
+void av_log_set_callback_help(void);
+
+void av_log_set_callback_report(int *_p_report_file_level, FILE *_report_file);
+
+int avutil_decode_interrupt_cb(void *ctx);
+
+void avutil_transcode_init_done(int *val, int get);
+
+volatile int *avutil_received_nb_signals_ptr(void);
 
 #endif /* AVUTIL_LOG_H */

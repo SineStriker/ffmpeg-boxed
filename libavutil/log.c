@@ -406,14 +406,6 @@ end:
 static void (*av_log_callback)(void*, int, const char*, va_list) =
     av_log_default_callback;
 
-void av_log(void* avcl, int level, const char *fmt, ...)
-{
-    va_list vl;
-    va_start(vl, fmt);
-    av_vlog(avcl, level, fmt, vl);
-    va_end(vl);
-}
-
 void av_log_once(void* avcl, int initial_level, int subsequent_level, int *state, const char *fmt, ...)
 {
     va_list vl;
@@ -489,4 +481,63 @@ void avpriv_report_missing_feature(void *avc, const char *msg, ...)
     va_start(argument_list, msg);
     missing_feature_sample(0, avc, msg, argument_list);
     va_end(argument_list);
+}
+
+// Addition
+
+static void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
+{
+    vfprintf(stdout, fmt, vl);
+}
+
+static int *p_report_file_level;
+static FILE *report_file;
+
+static void log_callback_report(void *ptr, int level, const char *fmt, va_list vl)
+{
+    va_list vl2;
+    char line[1024];
+    static int print_prefix = 1;
+
+    va_copy(vl2, vl);
+    av_log_default_callback(ptr, level, fmt, vl);
+    av_log_format_line(ptr, level, fmt, vl2, line, sizeof(line), &print_prefix);
+    va_end(vl2);
+    if (*p_report_file_level >= level) {
+        fputs(line, report_file);
+        fflush(report_file);
+    }
+}
+
+void av_log_set_callback_help(void)
+{
+    av_log_set_callback(log_callback_help);
+}
+
+void av_log_set_callback_report(int *_p_report_file_level, FILE *_report_file) {
+    p_report_file_level = _p_report_file_level;
+    report_file = _report_file;
+    av_log_set_callback(log_callback_report);
+}
+
+
+#include <stdatomic.h>
+
+static volatile int received_nb_signals = 0;
+static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
+
+int avutil_decode_interrupt_cb(void *ctx) {
+    return received_nb_signals > atomic_load(&transcode_init_done);
+}
+
+void avutil_transcode_init_done(int *val, int get) {
+    if (get) {
+        *val = atomic_load(&transcode_init_done);
+    } else {
+        atomic_store(&transcode_init_done, *val);
+    }
+}
+
+volatile int *avutil_received_nb_signals_ptr(void) {
+    return &received_nb_signals;
 }

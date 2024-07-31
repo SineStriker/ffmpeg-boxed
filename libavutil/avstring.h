@@ -21,9 +21,12 @@
 #ifndef AVUTIL_AVSTRING_H
 #define AVUTIL_AVSTRING_H
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "attributes.h"
+#include "libavutil/mem.h"
 #include "version.h"
 
 /**
@@ -130,7 +133,16 @@ size_t av_strlcat(char *dst, const char *src, size_t size);
  * @return the length of the string that would have been generated
  *  if enough space had been available
  */
-size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...) av_printf_format(3, 4);
+static inline size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...) {
+    size_t len = strlen(dst);
+    va_list vl;
+
+    va_start(vl, fmt);
+    len += vsnprintf(dst + len, size > len ? size - len : 0, fmt, vl);
+    va_end(vl);
+
+    return len;
+}
 
 /**
  * Get the count of continuous non zero chars starting from the beginning.
@@ -154,7 +166,30 @@ static inline size_t av_strnlen(const char *s, size_t len)
  * @return the allocated string
  * @note You have to free the string yourself with av_free().
  */
-char *av_asprintf(const char *fmt, ...) av_printf_format(1, 2);
+static inline char *av_asprintf(const char *fmt, ...) {
+    char *p = NULL;
+    va_list va;
+    int len;
+
+    va_start(va, fmt);
+    len = vsnprintf(NULL, 0, fmt, va);
+    va_end(va);
+    if (len < 0)
+        goto end;
+
+    p = (char *) av_malloc(len + 1);
+    if (!p)
+        goto end;
+
+    va_start(va, fmt);
+    len = vsnprintf(p, len + 1, fmt, va);
+    va_end(va);
+    if (len < 0)
+        av_freep(&p);
+
+end:
+    return p;
+}
 
 #if FF_API_D2STR
 /**

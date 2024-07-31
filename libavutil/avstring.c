@@ -101,43 +101,43 @@ size_t av_strlcat(char *dst, const char *src, size_t size)
     return len + av_strlcpy(dst + len, src, size - len);
 }
 
-size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...)
-{
-    size_t len = strlen(dst);
-    va_list vl;
+// size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...)
+// {
+//     size_t len = strlen(dst);
+//     va_list vl;
 
-    va_start(vl, fmt);
-    len += vsnprintf(dst + len, size > len ? size - len : 0, fmt, vl);
-    va_end(vl);
+//     va_start(vl, fmt);
+//     len += vsnprintf(dst + len, size > len ? size - len : 0, fmt, vl);
+//     va_end(vl);
 
-    return len;
-}
+//     return len;
+// }
 
-char *av_asprintf(const char *fmt, ...)
-{
-    char *p = NULL;
-    va_list va;
-    int len;
+// char *av_asprintf(const char *fmt, ...)
+// {
+//     char *p = NULL;
+//     va_list va;
+//     int len;
 
-    va_start(va, fmt);
-    len = vsnprintf(NULL, 0, fmt, va);
-    va_end(va);
-    if (len < 0)
-        goto end;
+//     va_start(va, fmt);
+//     len = vsnprintf(NULL, 0, fmt, va);
+//     va_end(va);
+//     if (len < 0)
+//         goto end;
 
-    p = av_malloc(len + 1);
-    if (!p)
-        goto end;
+//     p = av_malloc(len + 1);
+//     if (!p)
+//         goto end;
 
-    va_start(va, fmt);
-    len = vsnprintf(p, len + 1, fmt, va);
-    va_end(va);
-    if (len < 0)
-        av_freep(&p);
+//     va_start(va, fmt);
+//     len = vsnprintf(p, len + 1, fmt, va);
+//     va_end(va);
+//     if (len < 0)
+//         av_freep(&p);
 
-end:
-    return p;
-}
+// end:
+//     return p;
+// }
 
 #if FF_API_D2STR
 char *av_d2str(double d)

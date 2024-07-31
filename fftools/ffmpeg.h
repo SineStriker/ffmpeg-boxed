@@ -648,7 +648,7 @@ extern int filter_complex_nbthreads;
 extern int vstats_version;
 extern int auto_conversion_filters;
 
-extern const AVIOInterruptCB int_cb;
+extern AVIOInterruptCB int_cb;
 
 extern const OptionDef options[];
 #if CONFIG_QSV

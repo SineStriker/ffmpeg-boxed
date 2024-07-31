@@ -340,8 +340,7 @@ void term_exit(void)
 }
 
 static volatile int received_sigterm = 0;
-static volatile int received_nb_signals = 0;
-static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
+static volatile int *p_received_nb_signals = NULL;
 static volatile int ffmpeg_exited = 0;
 int main_return_code = 0;
 static int64_t copy_ts_first_pts = AV_NOPTS_VALUE;
@@ -351,9 +350,9 @@ sigterm_handler(int sig)
 {
     int ret;
     received_sigterm = sig;
-    received_nb_signals++;
+    *p_received_nb_signals++;
     term_exit_sigsafe();
-    if(received_nb_signals > 3) {
+    if(*p_received_nb_signals > 3) {
         ret = write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
                     strlen("Received > 3 system signals, hard exiting\n"));
         if (ret < 0) { /* Do nothing */ };
@@ -504,12 +503,12 @@ static int read_key(void)
     return -1;
 }
 
-static int decode_interrupt_cb(void *ctx)
-{
-    return received_nb_signals > atomic_load(&transcode_init_done);
-}
+AVIOInterruptCB int_cb = { NULL, NULL };
 
-const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
+static void  __attribute__((constructor)) init_values(void) {
+    p_received_nb_signals = avutil_received_nb_signals_ptr();
+    int_cb.callback = avutil_decode_interrupt_cb;
+}
 
 static void ffmpeg_cleanup(int ret)
 {
@@ -648,8 +647,12 @@ static void ffmpeg_cleanup(int ret)
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Exiting normally, received signal %d.\n",
                (int) received_sigterm);
-    } else if (ret && atomic_load(&transcode_init_done)) {
-        av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
+    } else if (ret) {
+        int val;
+        avutil_transcode_init_done(&val, 1);
+        if (val) {
+            av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
+        }
     }
     term_exit();
     ffmpeg_exited = 1;
@@ -3449,8 +3452,11 @@ static int transcode_init(void)
         return ret;
     }
 
-    atomic_store(&transcode_init_done, 1);
-
+    // atomic_store(&transcode_init_done, 1);
+    {
+        int val = 1;
+        avutil_transcode_init_done(&val,0);
+    }
     return 0;
 }
 
@@ -3528,7 +3534,7 @@ static int check_keyboard_interaction(int64_t cur_time)
 {
     int i, ret, key;
     static int64_t last_time;
-    if (received_nb_signals)
+    if (*p_received_nb_signals)
         return AVERROR_EXIT;
     /* read_key() returns 0 on EOF */
     if (cur_time - last_time >= 100000) {
@@ -4574,6 +4580,6 @@ int main(int argc, char **argv)
     if ((decode_error_stat[0] + decode_error_stat[1]) * max_error_rate < decode_error_stat[1])
         exit_program(69);
 
-    exit_program(received_nb_signals ? 255 : main_return_code);
+    exit_program(*p_received_nb_signals ? 255 : main_return_code);
     return main_return_code;
 }

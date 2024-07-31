@@ -33,7 +33,7 @@
 #define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))
 #define av_bprint_is_allocated(buf) ((buf)->str != (buf)->reserved_internal_buffer)
 
-static int av_bprint_alloc(AVBPrint *buf, unsigned room)
+int av_bprint_alloc(AVBPrint *buf, unsigned room)
 {
     char *old_str, *new_str;
     unsigned min_size, new_size;
@@ -57,7 +57,7 @@ static int av_bprint_alloc(AVBPrint *buf, unsigned room)
     return 0;
 }
 
-static void av_bprint_grow(AVBPrint *buf, unsigned extra_len)
+void av_bprint_grow(AVBPrint *buf, unsigned extra_len)
 {
     /* arbitrary margin to avoid small overflows */
     extra_len = FFMIN(extra_len, UINT_MAX - 5 - buf->len);
@@ -89,29 +89,6 @@ void av_bprint_init_for_buffer(AVBPrint *buf, char *buffer, unsigned size)
     buf->size     = size;
     buf->size_max = size;
     *buf->str = 0;
-}
-
-void av_bprintf(AVBPrint *buf, const char *fmt, ...)
-{
-    unsigned room;
-    char *dst;
-    va_list vl;
-    int extra_len;
-
-    while (1) {
-        room = av_bprint_room(buf);
-        dst = room ? buf->str + buf->len : NULL;
-        va_start(vl, fmt);
-        extra_len = vsnprintf(dst, room, fmt, vl);
-        va_end(vl);
-        if (extra_len <= 0)
-            return;
-        if (extra_len < room)
-            break;
-        if (av_bprint_alloc(buf, extra_len))
-            break;
-    }
-    av_bprint_grow(buf, extra_len);
 }
 
 void av_vbprintf(AVBPrint *buf, const char *fmt, va_list vl_arg)

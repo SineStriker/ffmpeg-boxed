@@ -404,7 +404,7 @@ struct AVBPrint;
  *
  * @deprecated use av_channel_layout_from_string()
  */
-attribute_deprecated
+// attribute_deprecated
 uint64_t av_get_channel_layout(const char *name);
 
 /**

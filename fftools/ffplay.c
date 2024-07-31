@@ -3621,7 +3621,8 @@ static void show_usage(void)
 
 void show_help_default(const char *opt, const char *arg)
 {
-    av_log_set_callback(log_callback_help);
+    // av_log_set_callback(log_callback_help);
+    av_log_set_callback_help();
     show_usage();
     show_help_options(options, "Main options:", 0, OPT_EXPERT, 0);
     show_help_options(options, "Advanced options:", OPT_EXPERT, 0, 0);
