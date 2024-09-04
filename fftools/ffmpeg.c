@@ -4519,41 +4519,10 @@ static int64_t getmaxrss(void)
 #endif
 }
 
-static uint64_t g_start_time;
-
-static inline uint64_t rdtsc(void) {
-    uint32_t low, high;
-    __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
-    return (uint64_t) high << 32 | low;
-}
-
-static inline uint64_t syscall1(uint64_t syscall_number, void *arg) {
-    uint64_t ret;
-    __asm__ volatile("movq %1, %%rax\n\t"            // 加载系统调用号到 rax
-                     "movq %2, %%rdi\n\t"            // 加载参数到 rdi
-                     "syscall\n\t"                   // 执行系统调用
-                     "movq %%rax, %0\n\t"            // 将返回值存储在 ret 中
-                     : "=r"(ret)                     // 输出列表
-                     : "r"(syscall_number), "r"(arg) // 输入列表
-                     : "%rax", "%rdi", "memory"      // 被改变的寄存器列表
-    );
-    return ret;
-}
-
-static void _exit1(void) {
-    uint64_t end_time = rdtsc();
-    double time1 = ((double) (end_time - g_start_time)) / 2.9e9 * 1000;
-    printf("FFmpeg total cycles: %.3f\n", time1);
-    syscall1(114515, NULL);
-}
-
 int main(int argc, char **argv)
 {
     int i, ret;
     BenchmarkTimeStamps ti;
-
-    atexit(_exit1);
-    g_start_time = rdtsc();
 
     init_dynload();
 
